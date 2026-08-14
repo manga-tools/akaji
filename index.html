@@ -236,8 +236,8 @@ input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);
         <span class="val" id="colTxt">#e8202a</span></div>
       <div class="row"><label>太さ</label><input type="range" id="wid" min="1" max="60" value="6">
         <span class="val" id="widV">6</span></div>
-      <div class="row"><label>文字</label><input type="range" id="tsz" min="8" max="400" value="22">
-        <input type="number" id="tszN" class="num" min="4" max="2000" step="1" value="22"></div>
+      <div class="row"><label>文字</label><input type="range" id="tsz" min="8" max="400" value="40">
+        <input type="number" id="tszN" class="num" min="4" max="2000" step="1" value="40"></div>
       <div class="hint" id="selInfo" style="display:none;margin-top:6px">
         選択中：上のスライダー・色で<b>あとから変更</b>できます（Delete で削除）
       </div>
@@ -347,7 +347,7 @@ const TOOLS = [
 
 const S = {
   pages: [], cur: -1,
-  tool: "pen", color: PALETTE[0], width: 6, textSize: 22,
+  tool: "pen", color: PALETTE[0], width: 6, textSize: 40,
   view: {scale:1, ox:0, oy:0},
   penSeen: false, spaceDown: false,
   sel: new Set(),        // 選択中のストローク番号
@@ -465,7 +465,7 @@ bindRange("#wid","#widV", v=>v, v=>{
 /* 文字サイズ：スライダーと数値入力の両方から。選択中なら後から変更 */
 const tszR = $("#tsz"), tszN = $("#tszN");
 function setTsz(v, apply){
-  v = clamp(Math.round(v) || 22, 4, 2000);
+  v = clamp(Math.round(v) || 40, 4, 2000);
   S.textSize = v;
   tszR.value = clamp(v, +tszR.min, +tszR.max);
   if(document.activeElement !== tszN) tszN.value = v;
@@ -601,8 +601,8 @@ function drawStroke(c, st){
   } else if(st.type === "arrow"){
     const ang = Math.atan2(st.y2-st.y1, st.x2-st.x1);
     const len = Math.hypot(st.x2-st.x1, st.y2-st.y1);
-    const L = Math.min(Math.max(st.width*5.2, 16), len);   // 矢じりの長さ
-    const spread = 0.30;                                   // 細めにして尖らせる
+    const L = Math.min(Math.max(st.width*7, 22), len);     // 矢じりの長さ
+    const spread = 0.34;                                   // 開き（大きいほど幅広）
     // 軸は矢じりのくぼみに少し食い込ませて止める（線端の丸みが先端を鈍らせないように）
     const back = 0.68;
     const bx = st.x2 - L*back*Math.cos(ang), by = st.y2 - L*back*Math.sin(ang);
