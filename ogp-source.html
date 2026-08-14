@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1200px;height:630px;overflow:hidden}
+body{
+  background:#1b1d21;
+  font-family:"Hiragino Sans","Yu Gothic",sans-serif;
+  color:#e9ecef;
+  position:relative;
+}
+/* うっすらチェック柄（アプリの作業画面と同じ） */
+.bg{position:absolute;inset:0;
+  background:repeating-conic-gradient(#1e2126 0% 25%, #22252a 0% 50%) 50%/26px 26px}
+.glow{position:absolute;right:-140px;top:-160px;width:620px;height:620px;border-radius:50%;
+  background:radial-gradient(circle,rgba(232,32,42,.22),transparent 68%)}
+
+.wrap{position:absolute;inset:0;display:flex;align-items:center;gap:26px;padding:56px 58px}
+
+/* ---- 左 ---- */
+.left{width:552px;flex:none}
+.chips{display:flex;gap:9px;margin-bottom:26px}
+.chips span{border:1px solid #3a3f47;background:#2c3037;border-radius:999px;
+  padding:7px 18px;font-size:20px;font-weight:600;color:#e9ecef}
+h1{font-size:78px;font-weight:800;letter-spacing:.01em;line-height:1.12}
+h1 b{color:#e8202a}
+.sub{margin-top:22px;font-size:26px;font-weight:600;color:#c3cad3;line-height:1.6}
+.foot{margin-top:34px;display:flex;align-items:center;gap:12px;font-size:21px;color:#9aa2ad}
+.foot .kbd{background:#2c3037;border:1px solid #3a3f47;border-radius:7px;
+  padding:4px 12px;color:#e9ecef;font-weight:700}
+.foot .dot{opacity:.45}
+.out{margin-top:16px;display:flex;gap:9px}
+.out span{border:1px solid #3a3f47;border-radius:7px;padding:5px 14px;
+  font-size:19px;font-weight:700;color:#9aa2ad}
+.out span.pdf{background:#e8202a;border-color:#e8202a;color:#fff}
+
+/* ---- 右：赤入れ中の紙 ---- */
+.paper{position:relative;width:500px;height:480px;background:#fff;border-radius:6px;
+  box-shadow:0 26px 60px rgba(0,0,0,.55);transform:rotate(-3deg);flex:none}
+.photo{position:absolute;left:26px;top:26px;width:296px;height:348px;background:#c7c7c7;
+  overflow:hidden}
+.photo i{position:absolute;background:#b0b0b0;display:block}
+.photo .p1{left:22px;top:26px;width:190px;height:16px}
+.photo .p2{left:22px;top:58px;width:250px;height:16px}
+.photo .p3{left:22px;top:90px;width:150px;height:16px}
+.photo .p4{left:22px;top:150px;width:256px;height:150px;background:#b7b7b7}
+.paper svg{position:absolute;inset:0;width:100%;height:100%}
+.note{position:absolute;font-family:"Hiragino Sans",sans-serif;font-weight:800;color:#e8202a}
+.n1{right:28px;top:136px;font-size:27px;line-height:1.35;text-align:left}
+.n2{left:34px;bottom:34px;font-size:24px}
+</style>
+</head>
+<body>
+<div class="bg"></div><div class="glow"></div>
+
+<div class="wrap">
+  <div class="left">
+    <div class="chips"><span>画像</span><span>テキスト</span><span>スクショ</span><span>PDF</span></div>
+    <h1><b>赤字</b>を入れる<br>やーつ</h1>
+    <div class="sub">ブラウザで開くだけ。<br>余白を足して、画像を薄くして、赤入れ。</div>
+    <div class="foot">
+      <span>ドロップ</span><span class="dot">か</span><span class="kbd">⌘V</span><span>ペーストで！</span>
+    </div>
+    <div class="out"><span>PNG</span><span>JPEG</span><span class="pdf">PDF</span></div>
+  </div>
+
+  <div class="paper">
+    <div class="photo">
+      <i class="p1"></i><i class="p2"></i><i class="p3"></i><i class="p4"></i>
+    </div>
+    <svg viewBox="0 0 500 480">
+      <!-- 写真の一部を丸で囲む -->
+      <ellipse cx="150" cy="255" rx="96" ry="62" fill="none" stroke="#e8202a" stroke-width="6"
+               stroke-linecap="round" transform="rotate(-4 150 255)"/>
+      <!-- 余白へ引き出す矢印（先は尖らせる） -->
+      <path d="M244 246 C 300 232, 320 196, 352 172" fill="none" stroke="#e8202a"
+            stroke-width="6" stroke-linecap="round"/>
+      <path d="M372 156 L349 190 L353 174 L338 170 Z" fill="#e8202a"/>
+      <!-- 手書きの下線 -->
+      <path d="M52 400 C 120 392, 190 408, 262 396" fill="none" stroke="#e8202a"
+            stroke-width="5" stroke-linecap="round"/>
+      <!-- チェックマーク -->
+      <path d="M330 404 l16 18 l30 -44" fill="none" stroke="#e8202a" stroke-width="7"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="note n1">ここ<br>直す</div>
+    <div class="note n2">いい感じ！</div>
+  </div>
+</div>
+</body>
+</html>
