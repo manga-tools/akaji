@@ -1618,13 +1618,13 @@ window.addEventListener("beforeunload", e=>{
   if(S.pages.some(p=>p.strokes.length)){ e.preventDefault(); e.returnValue = ""; }
 });
 
-/* 「使い方」の開閉を覚えておく（初回は開いた状態） */
+/* 「使い方」の開閉を覚えておく（初回は畳んだ状態） */
 (()=>{
   const d = $("#howto");
   try{
-    d.open = localStorage.getItem("akaire.howto") !== "0";
+    d.open = localStorage.getItem("akaire.howto") === "1";
     d.addEventListener("toggle", ()=>localStorage.setItem("akaire.howto", d.open ? "1" : "0"));
-  }catch(e){ d.open = true; }          // file:// で localStorage が使えない環境向け
+  }catch(e){ d.open = false; }         // file:// で localStorage が使えない環境向け
 })();
 
 setTool("pen");
