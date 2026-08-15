@@ -200,6 +200,7 @@ input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);
     <button class="btn" id="bUndo" title="⌘Z">元に戻す</button>
     <button class="btn" id="bRedo" title="⇧⌘Z">やり直す</button>
     <div class="sp"></div>
+    <button class="btn" id="bCopy" title="表示中のページを画像としてクリップボードにコピー（⇧⌘C）">コピー</button>
     <button class="btn hideS" id="bPng">PNG</button>
     <button class="btn hideS" id="bJpg">JPEG</button>
     <button class="btn pri" id="bPdf">PDFで書き出す</button>
@@ -278,6 +279,7 @@ input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);
         <b>[</b> <b>]</b> 太さ / <b>1〜6</b> 色<br>
         <b>space+ドラッグ</b>・ホイールで移動、<b>⌘ホイール</b>で拡大縮小<br>
         <b>⌘0</b> 全体表示 / <b>⌘1</b> 等倍 / <b>←→</b> ページ移動<br>
+        <b>⇧⌘C</b> 表示中のページを画像としてコピー（Slackなどにそのまま貼れます）<br>
         <b>ページの複製</b>：サムネイルの <b>⧉</b> か <b>⌘D</b>（赤字ごとコピーして隣に追加。書き比べに便利です）<br>
         消しゴムは線を1本ずつ消します。<br>
         Apple Pencil・ペンタブの筆圧に対応（ペン使用中は指では描かず画面移動になります）。
@@ -1483,6 +1485,23 @@ async function exportImage(type){
   }
   toast(`${ext.toUpperCase()} を書き出しました`);
 }
+/* --- 表示中のページを画像としてクリップボードへ --- */
+async function copyPageToClipboard(){
+  if(!S.pages.length){ toast("画像がありません"); return; }
+  if(!navigator.clipboard || !window.ClipboardItem){
+    toast("このブラウザはコピーに対応していません"); return;
+  }
+  try{
+    // Promise を渡す形にすると Safari でもユーザー操作として扱われる
+    const png = toBlob(pageCanvas(P()), "image/png");
+    await navigator.clipboard.write([new ClipboardItem({"image/png": png})]);
+    toast("クリップボードにコピーしました");
+  }catch(err){
+    console.warn(err);
+    toast("コピーできませんでした");
+  }
+}
+$("#bCopy").onclick = copyPageToClipboard;
 $("#bPng").onclick = ()=>exportImage("image/png");
 $("#bJpg").onclick = ()=>exportImage("image/jpeg");
 
@@ -1566,6 +1585,9 @@ window.addEventListener("keydown", e=>{
     const r = $("#stage").getBoundingClientRect();
     zoomAt(r.width/2, r.height/2, 1/S.view.scale); return; }
   if(mod && e.key.toLowerCase() === "s"){ e.preventDefault(); exportPDF(); return; }
+  if(mod && e.shiftKey && e.key.toLowerCase() === "c"){   // 画像としてコピー
+    e.preventDefault(); copyPageToClipboard(); return;
+  }
   if(mod && e.key.toLowerCase() === "d"){                 // ページを複製
     e.preventDefault();
     if(S.cur >= 0) duplicatePage(S.cur);
