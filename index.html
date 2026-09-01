@@ -32,19 +32,37 @@ body{
   background:var(--bg);color:var(--fg);
   font:13px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
   overflow:hidden;overscroll-behavior:none;
+  /* iPad：指でドラッグしたときに画面全体が青く選択されるのを防ぐ */
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;                 /* 長押しのポップアップも出さない */
+  -webkit-text-size-adjust:100%;
+  touch-action:manipulation;                  /* ダブルタップ拡大を止める */
 }
+/* 入力欄だけは文字選択できるように戻す */
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
+/* ダブルタップ拡大を止める（ボタンの反応も速くなる） */
+button,.tool,.thumb,.sw,label,summary{touch-action:manipulation}
+img,canvas{-webkit-user-drag:none;user-drag:none}
 button,input,select,textarea{font:inherit;color:inherit}
 button{background:none;border:none;cursor:pointer}
 
 /* ---------- layout ---------- */
-#app{display:grid;height:100%;
+#app{display:grid;height:100%;height:100dvh;
+  padding-bottom:env(safe-area-inset-bottom,0px);
   grid-template-columns:var(--rail) 1fr var(--side);
   grid-template-rows:var(--head) 1fr var(--foot);
   grid-template-areas:"head head head" "rail stage side" "rail foot side";}
-#head{grid-area:head;display:flex;align-items:center;gap:8px;padding:0 12px;
-  background:var(--panel);border-bottom:1px solid var(--line)}
+#head{grid-area:head;display:flex;align-items:center;gap:8px;
+  padding:0 max(12px,env(safe-area-inset-left)) 0 max(12px,env(safe-area-inset-left));
+  background:var(--panel);border-bottom:1px solid var(--line);
+  /* 幅が足りないときは横スクロールで必ず全部に触れるようにする */
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#head::-webkit-scrollbar{display:none}
+#head>*:not(.sp){flex:none}
 #rail{grid-area:rail;background:var(--panel);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;overflow-y:auto}
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;
+  overflow-y:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#rail::-webkit-scrollbar{display:none}
 #stage{grid-area:stage;position:relative;overflow:hidden;background:
   repeating-conic-gradient(#202329 0% 25%, #24272c 0% 50%) 50%/22px 22px}
 #side{grid-area:side;background:var(--panel);border-left:1px solid var(--line);
@@ -62,7 +80,7 @@ button{background:none;border:none;cursor:pointer}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 .btn.pri:hover{background:#f5333d}
 .btn:disabled{opacity:.38;cursor:default}
-.sp{flex:1}
+.sp{flex:1 0 6px;min-width:6px}
 .sep{width:1px;height:24px;background:var(--line);margin:0 2px}
 
 /* ---------- tool rail ---------- */
@@ -179,12 +197,40 @@ input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);
   opacity:0;transition:.2s;pointer-events:none;z-index:99}
 #toast.on{opacity:1;transform:translateX(-50%)}
 
+/* 引き出し（狭いとき用）の下地 */
+.showS{display:none}
+#sideveil{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:39;display:none}
+#sideveil.on{display:block}
+
+/* 中くらいの幅：サイドを少し細く */
+@media (max-width:1180px){ :root{--side:268px} }
+/* 高さが足りないとき：ツールを小さく */
+@media (max-height:680px){
+  :root{--head:46px;--foot:78px}
+  .tool{width:36px;height:36px}
+  .tool svg{width:19px;height:19px}
+  .railsep{margin:3px 0}
+}
 @media (max-width:860px){
   :root{--side:0px;--foot:78px}
-  #side{display:none}
   #app{grid-template-columns:var(--rail) 1fr;
     grid-template-areas:"head head" "rail stage" "rail foot"}
   .hideS{display:none}
+  .showS{display:block}
+  .brand{display:none}
+  /* サイドパネルを消さずに、右からスライドする引き出しにする */
+  #side{position:fixed;top:var(--head);right:0;
+    bottom:env(safe-area-inset-bottom,0px);
+    width:min(300px,86vw);z-index:40;
+    box-shadow:-8px 0 24px rgba(0,0,0,.45);
+    transform:translateX(102%);transition:transform .18s ease;
+    padding-bottom:24px}
+  #side.open{transform:none}
+}
+@media (max-width:520px){
+  :root{--rail:48px}
+  .tool{width:38px;height:38px}
+  .btn{padding:6px 8px}
 }
 </style>
 </head>
@@ -193,6 +239,7 @@ input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);
 
   <div id="head">
     <div class="brand"><b>赤字</b>を入れるやーつ</div>
+    <button class="btn showS" id="bSide" title="ペン・余白などの設定">⚙︎ 設定</button>
     <button class="btn" id="bOpen">画像を開く</button>
     <button class="btn" id="bPaste" title="⌘V でも貼り付けできます">貼り付け</button>
     <button class="btn" id="bText">テキストから</button>
@@ -290,6 +337,7 @@ input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);
 
   <div id="foot"><span id="footmsg">画像を読み込むとここにページが並びます</span></div>
 </div>
+<div id="sideveil"></div>
 
 <!-- テキスト入力モーダル -->
 <div class="modal" id="mText">
@@ -542,13 +590,34 @@ function syncSide(){
 const cv = $("#cv"), ctx = cv.getContext("2d");
 let DPR = Math.min(window.devicePixelRatio||1, 2.5);
 
+let lastStage = null;
 function resize(){
   const r = $("#stage").getBoundingClientRect();
+  if(r.width < 2 || r.height < 2) return;              // レイアウト確定前は何もしない
+  // 表示中の絵が画面外に飛ばないよう、中心を保ったままキャンバスを作り直す
+  if(lastStage){
+    S.view.ox += (r.width  - lastStage.w) / 2;
+    S.view.oy += (r.height - lastStage.h) / 2;
+  }
+  lastStage = {w:r.width, h:r.height};
   DPR = Math.min(window.devicePixelRatio||1, 2.5);
   cv.width = Math.round(r.width*DPR); cv.height = Math.round(r.height*DPR);
   render();
 }
-window.addEventListener("resize", resize);
+/* iPadでは window の resize が鳴らない場面が多いので、
+   ステージ自体の大きさを見張る（Split View・分割の幅変更・回転・ツールバー開閉すべてに反応） */
+let rzWait = 0;
+function resizeSoon(){
+  cancelAnimationFrame(rzWait);
+  rzWait = requestAnimationFrame(()=>requestAnimationFrame(resize));
+}
+window.addEventListener("resize", resizeSoon);
+window.addEventListener("orientationchange", ()=>setTimeout(resizeSoon, 350));
+if(window.ResizeObserver) new ResizeObserver(resizeSoon).observe($("#stage"));
+if(window.visualViewport){
+  visualViewport.addEventListener("resize", resizeSoon);
+  visualViewport.addEventListener("scroll", resizeSoon);
+}
 
 function fit(){
   const p = P(); if(!p) return;
@@ -1648,6 +1717,35 @@ window.addEventListener("beforeunload", e=>{
     d.addEventListener("toggle", ()=>localStorage.setItem("akaire.howto", d.open ? "1" : "0"));
   }catch(e){ d.open = false; }         // file:// で localStorage が使えない環境向け
 })();
+
+/* ===== iPad 対策 ===== */
+
+/* 1) 指ドラッグで画面が青く選択されるのを止める（入力欄は除く） */
+document.addEventListener("selectstart", e=>{
+  if(!e.target.closest || !e.target.closest("input,textarea,[contenteditable='true']")) e.preventDefault();
+});
+/* 2) Safari のページごとピンチ拡大を止める（絵の拡大縮小はアプリ側で処理） */
+for(const t of ["gesturestart","gesturechange","gestureend"]){
+  document.addEventListener(t, e=>e.preventDefault(), {passive:false});
+}
+/* 3) 画面のゴムのような跳ね返りを止める（スクロールさせたい所は除く） */
+document.addEventListener("touchmove", e=>{
+  if(e.target.closest && e.target.closest("#side,#foot,#rail,#head,.card,textarea,input[type=range]")) return;
+  if(e.cancelable) e.preventDefault();
+}, {passive:false});
+
+/* 5) 狭い画面ではサイドパネルを引き出しにする */
+const sideEl = $("#side"), veilEl = $("#sideveil");
+function openSide(on){
+  sideEl.classList.toggle("open", on);
+  veilEl.classList.toggle("on", on);
+}
+$("#bSide").onclick = ()=>openSide(!sideEl.classList.contains("open"));
+veilEl.onclick = ()=>openSide(false);
+$("#stage").addEventListener("pointerdown", ()=>openSide(false));
+/* 広い画面に戻ったら引き出しは閉じておく */
+const mqNarrow = matchMedia("(max-width:860px)");
+if(mqNarrow.addEventListener) mqNarrow.addEventListener("change", ()=>openSide(false));
 
 setTool("pen");
 resize();
