@@ -26,7 +26,8 @@
   --fg:#e9ecef; --fg-dim:#9aa2ad; --accent:#e8202a; --accent2:#3d8bfd;
   --rail:56px; --side:312px; --head:52px; --foot:96px;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+  touch-action:manipulation}   /* ← touch-action は継承されないので全要素に。ダブルタップ拡大を殺す */
 html,body{height:100%;margin:0}
 body{
   background:var(--bg);color:var(--fg);
@@ -41,7 +42,8 @@ body{
 /* 入力欄だけは文字選択できるように戻す */
 input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
 /* ダブルタップ拡大を止める（ボタンの反応も速くなる） */
-button,.tool,.thumb,.sw,label,summary{touch-action:manipulation}
+/* スライダーは横ドラッグを確実に拾い、縦スクロールは通す */
+input[type=range]{touch-action:pan-y}
 img,canvas{-webkit-user-drag:none;user-drag:none}
 button,input,select,textarea{font:inherit;color:inherit}
 button{background:none;border:none;cursor:pointer}
@@ -192,6 +194,11 @@ input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);
 .cardrow label{color:var(--fg-dim)}
 .cardrow select,.cardrow input[type=number]{width:auto;min-width:80px}
 .end{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+#zoomfix{position:fixed;left:50%;top:8px;transform:translateX(-50%);display:none;
+  align-items:center;gap:10px;z-index:98;
+  background:rgba(17,20,23,.95);border:1px solid var(--line);border-radius:10px;
+  padding:8px 12px;box-shadow:0 6px 20px rgba(0,0,0,.5);white-space:nowrap}
+#zoomfix.on{display:flex}
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
   background:#111417;border:1px solid var(--line);border-radius:9px;padding:9px 16px;
   opacity:0;transition:.2s;pointer-events:none;z-index:99}
@@ -1724,15 +1731,51 @@ window.addEventListener("beforeunload", e=>{
 document.addEventListener("selectstart", e=>{
   if(!e.target.closest || !e.target.closest("input,textarea,[contenteditable='true']")) e.preventDefault();
 });
-/* 2) Safari のページごとピンチ拡大を止める（絵の拡大縮小はアプリ側で処理） */
+/* 2) ピンチ封じは描画エリアだけにする。
+      ページ全体で封じると、いちど拡大されたときに指で戻せなくなるため。 */
 for(const t of ["gesturestart","gesturechange","gestureend"]){
-  document.addEventListener(t, e=>e.preventDefault(), {passive:false});
+  $("#stage").addEventListener(t, e=>e.preventDefault(), {passive:false});
 }
+
+/* 2-b) ダブルタップ拡大の保険。ボタン類のタップは邪魔しない */
+let lastTapAt = 0;
+document.addEventListener("touchend", e=>{
+  const now = Date.now();
+  const interactive = e.target.closest &&
+    e.target.closest("button,input,select,textarea,summary,label,a,.thumb,.sw,#cv");
+    // #cv は touch-action:none で既に拡大しないので除外（文字のダブルタップ編集を守る）
+  if(now - lastTapAt < 350 && !interactive && e.cancelable) e.preventDefault();
+  lastTapAt = now;
+}, {passive:false});
 /* 3) 画面のゴムのような跳ね返りを止める（スクロールさせたい所は除く） */
 document.addEventListener("touchmove", e=>{
+  if(pageZoomed()) return;                    // 拡大されている間は動かせるように通す
   if(e.target.closest && e.target.closest("#side,#foot,#rail,#head,.card,textarea,input[type=range]")) return;
   if(e.cancelable) e.preventDefault();
 }, {passive:false});
+
+/* 4) 万一ページが拡大されてしまったときの脱出口 */
+function pageZoomed(){
+  return !!(window.visualViewport && visualViewport.scale > 1.02);
+}
+const zoomFix = document.createElement("div");
+zoomFix.id = "zoomfix";
+zoomFix.innerHTML = `<span>画面が拡大されています</span><button class="btn pri">表示を元に戻す</button>`;
+document.body.appendChild(zoomFix);
+zoomFix.querySelector("button").onclick = ()=>{
+  // iPadOS では確実な API がないので、viewport を入れ直して復帰を試みる
+  const m = document.querySelector('meta[name=viewport]');
+  const base = "width=device-width, initial-scale=1, viewport-fit=cover";
+  m.setAttribute("content", base + ", maximum-scale=1, user-scalable=no");
+  setTimeout(()=>m.setAttribute("content", base), 60);
+  setTimeout(checkZoom, 400);
+};
+function checkZoom(){ zoomFix.classList.toggle("on", pageZoomed()); }
+if(window.visualViewport){
+  visualViewport.addEventListener("resize", checkZoom);
+  visualViewport.addEventListener("scroll", checkZoom);
+  checkZoom();
+}
 
 /* 5) 狭い画面ではサイドパネルを引き出しにする */
 const sideEl = $("#side"), veilEl = $("#sideveil");
